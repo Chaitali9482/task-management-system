@@ -41,6 +41,11 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
+  const isAuthUtilityRoute =
+    request.nextUrl.pathname.startsWith('/auth/callback') ||
+    request.nextUrl.pathname.startsWith('/auth/confirmed') ||
+    request.nextUrl.pathname.startsWith('/auth/error')
+
   if (
     !user &&
     (request.nextUrl.pathname.startsWith('/dashboard') ||
@@ -52,7 +57,7 @@ export async function updateSession(request: NextRequest) {
   }
 
   // Redirect logged-in users away from auth pages
-  if (user && request.nextUrl.pathname.startsWith('/auth')) {
+  if (user && request.nextUrl.pathname.startsWith('/auth') && !isAuthUtilityRoute) {
     const url = request.nextUrl.clone()
     url.pathname = '/dashboard'
     return NextResponse.redirect(url)

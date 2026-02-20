@@ -16,6 +16,15 @@ import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { CheckSquare } from 'lucide-react'
 
+const mapAuthError = (error: unknown) => {
+  const message = error instanceof Error ? error.message : 'An error occurred'
+  const normalized = message.toLowerCase()
+  if (normalized.includes('email rate limit exceeded') || normalized.includes('rate limit')) {
+    return 'Too many attempts. Please try again later.'
+  }
+  return message
+}
+
 export default function SignUpPage() {
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
@@ -44,13 +53,17 @@ export default function SignUpPage() {
     }
 
     try {
+      const configuredRedirectUrl = process.env.NEXT_PUBLIC_SUPABASE_EMAIL_REDIRECT_URL
+      const emailRedirectTo =
+        configuredRedirectUrl && configuredRedirectUrl.includes('/auth/callback')
+          ? configuredRedirectUrl
+          : `${window.location.origin}/auth/callback`
+
       const { error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          emailRedirectTo:
-            process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL ||
-            `${window.location.origin}/dashboard`,
+          emailRedirectTo,
           data: {
             full_name: fullName,
           },
@@ -59,7 +72,7 @@ export default function SignUpPage() {
       if (error) throw error
       router.push('/auth/sign-up-success')
     } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : 'An error occurred')
+      setError(mapAuthError(error))
     } finally {
       setIsLoading(false)
     }
