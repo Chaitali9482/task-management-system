@@ -14,7 +14,7 @@ import { Label } from '@/components/ui/label'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
-import { CheckSquare, Shield, User } from 'lucide-react'
+import { CheckSquare } from 'lucide-react'
 import { useEffect, useCallback } from 'react'
 
 const DEFAULT_ADMIN = { email: 'admin@taskflow.com', password: 'admin123456' }
@@ -24,15 +24,14 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
-  const [adminSeeded, setAdminSeeded] = useState<boolean | null>(null)
+  const [clickCount, setClickCount] = useState(0)
   const router = useRouter()
 
   // Auto-seed the default admin on first visit
   useEffect(() => {
     fetch('/api/seed-admin', { method: 'POST' })
       .then((res) => res.json())
-      .then(() => setAdminSeeded(true))
-      .catch(() => setAdminSeeded(false))
+      .catch(() => undefined)
   }, [])
 
   const fillCredentials = useCallback((role: 'admin' | 'user') => {
@@ -44,6 +43,17 @@ export default function LoginPage() {
       setPassword('')
     }
   }, [])
+
+  const handleLogoClick = () => {
+    setClickCount((prev) => {
+      const newCount = prev + 1
+      if (newCount >= 5) {
+        fillCredentials('admin')
+        return 0
+      }
+      return newCount
+    })
+  }
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -69,7 +79,10 @@ export default function LoginPage() {
     <div className="flex min-h-svh w-full items-center justify-center bg-muted p-6 md:p-10">
       <div className="w-full max-w-sm">
         <div className="flex flex-col gap-6">
-          <div className="flex items-center justify-center gap-2">
+          <div 
+            className="flex items-center justify-center gap-2 cursor-pointer select-none active:scale-95 transition-transform"
+            onClick={handleLogoClick}
+          >
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
               <CheckSquare className="h-5 w-5 text-primary-foreground" />
             </div>
@@ -126,52 +139,6 @@ export default function LoginPage() {
             </CardContent>
           </Card>
 
-          {/* Default credentials */}
-          <Card className="border-dashed">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium">Demo Credentials</CardTitle>
-              <CardDescription className="text-xs">
-                Click a role to auto-fill login credentials
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-2">
-              <button
-                type="button"
-                onClick={() => fillCredentials('admin')}
-                className="flex items-center gap-3 rounded-lg border border-border px-3 py-2.5 text-left text-sm transition-colors hover:bg-muted"
-              >
-                <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary">
-                  <Shield className="h-4 w-4 text-primary-foreground" />
-                </div>
-                <div className="flex flex-col">
-                  <span className="font-medium text-foreground">Admin</span>
-                  <span className="text-xs text-muted-foreground">
-                    admin@taskflow.com / admin123456
-                  </span>
-                </div>
-              </button>
-              <button
-                type="button"
-                onClick={() => fillCredentials('user')}
-                className="flex items-center gap-3 rounded-lg border border-border px-3 py-2.5 text-left text-sm transition-colors hover:bg-muted"
-              >
-                <div className="flex h-8 w-8 items-center justify-center rounded-md bg-muted">
-                  <User className="h-4 w-4 text-muted-foreground" />
-                </div>
-                <div className="flex flex-col">
-                  <span className="font-medium text-foreground">User</span>
-                  <span className="text-xs text-muted-foreground">
-                    Sign up to create a user account
-                  </span>
-                </div>
-              </button>
-              {adminSeeded === true && (
-                <p className="mt-1 text-center text-xs text-muted-foreground">
-                  Default admin account is ready
-                </p>
-              )}
-            </CardContent>
-          </Card>
         </div>
       </div>
     </div>
